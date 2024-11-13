@@ -174,6 +174,7 @@ function Get-BsPostBody {
       }
       $SpotifyImage = get-BsSpotifyImage @Params
 
+      $BlogImage = Copy-BsComputerImageToBlog -imagePath $SpotifyImage
 
 
       <#
@@ -185,7 +186,7 @@ function Get-BsPostBody {
 $PostBody
 <p>
    <img 
-      src="$SpotifyImage" 
+      src="$BlogImage" 
       alt="Cover of the Spotify 'album' - $Album"
       style="float:left;width:42px;height:42px;margin-right:10px">
    <a href=
@@ -235,7 +236,7 @@ function get-BsSpotifyImage {
    
    
 }
-function Output-BsPostBodyToFile {
+function Write-BsPostBodyToFile {
    <#
 .SYNOPSIS
    xx
@@ -264,7 +265,12 @@ function Copy-BsComputerImageToBlog {
 #>
    [CmdletBinding()]
    param (
-      $BlogToken = $(import-csv $PSParametersFolder/GeneralParameters.csv | Where-Object Parameter -eq 'BlogToken').value,
+      $BlogName = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
+         Where-Object Parameter -eq 'BlogName').value, 
+      $BlogConfigUri = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
+         Where-Object Parameter -eq 'BlogConfigUri').value, 
+      $BlogToken = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
+         Where-Object Parameter -eq 'BlogToken').value,
       [Parameter(Mandatory = $True)][string]$imagePath
    )
    
@@ -277,12 +283,22 @@ function Copy-BsComputerImageToBlog {
    $headers = @{
       "Authorization" = "Bearer $BlogToken"
    }
-   $response = Invoke-RestMethod -Uri "https://micro.blog/micropub?q=config" -Headers $headers
-   $mediaEndpoint = $response."media-endpoint"
+   $response = Invoke-RestMethod -Uri $BlogConfigUri -Headers $headers
+   [string]$mediaEndpoint = $response."media-endpoint"
+
+   $Destination = $response | 
+      Select-Object -ExpandProperty destination |
+      Where-Object name -EQ $BlogName
+
+   [string]$MpDestination = $Destination.Uid
+   $MpDestination = [System.Web.HttpUtility]::UrlEncode($MpDestination)
+
+   $Uri ="${mediaEndpoint}?mp-destination=$MpDestination" 
+
    $form = @{
       file = Get-Item $imagePath
    }
-   $uploadResponse = Invoke-RestMethod -Uri $mediaEndpoint -Method Post -Headers $headers -Form $form
+   $uploadResponse = Invoke-RestMethod -Uri $Uri -Method Post -Headers $headers -Form $form
    $imageUrl = $uploadResponse.Url
    write-endfunction
 
