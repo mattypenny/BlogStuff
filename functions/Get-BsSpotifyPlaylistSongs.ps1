@@ -5,14 +5,29 @@ function New-BsBlogPostFromSpotifyPlaylist {
 #>
    [CmdletBinding()]
    param (
-      [Parameter(Mandatory = $False)][string]$PlaylistName = 'Discovered in 2024',
+      [string]$BlogToken = $(Get-BsParameter -parameter BsBlogToken),
+      [string]$BlogName = $(Get-BsParameter -parameter BsBlogName),
+      [string]$PlaylistName = $(Get-BsParameter -parameter BsPlaylistName),
+      [string]$BlogConfigUri = $(Get-BsParameter -parameter BsBlogConfigUri),
+      [string]$SpotifyWork = $(Get-BsParameter -parameter BsSpotifyWork),
+      [string]$BodyPath = $(Get-BsParameter -parameter BsBodyPath),
+      [string]$ImagesFolderPath = $(Get-BsParameter -parameter BsImagesPath),
+
       $Since = $(get-date).adddays(-14)
    )
    
    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
    write-startfunction
+
+
+   $Songs = Get-BsSpotifyPlaylistSongs -Since $Since -PlaylistName $PlaylistName
    
+   $BlogConfig = Get-BsBlogConfig -BlogConfigUri $BlogConfigUri -BlogToken $BlogToken
+   [string]$PostBody = Get-BSPostBody -Songs $Songs -BlogConfig $BlogConfig -BodyPath $BodyPath -ImagesFolderPath $ImagesPath
+   
+   
+   Write-Output $PostBody
    
    write-endfunction
    
@@ -26,7 +41,7 @@ function Get-BsSpotifyPlaylistSongs {
 #>
    [CmdletBinding()]
    param (
-      [Parameter(Mandatory = $False)][string]$PlaylistName = 'Discovered in 2024',
+      [Parameter(Mandatory = $True)][string]$PlaylistName,
       $Since = $(get-date).adddays(-14)
    )
    
@@ -84,10 +99,6 @@ function Get-BsSpotifyPlaylistSongs {
          }
       }
    }
-    
-    
-   
-   # Get-PlaylistItems 4IDjIaydoGw4zODeBh7SUX #    select -expand tracks | select -expand items | select -expand track | select name
    
 }
 
@@ -143,6 +154,7 @@ function Get-BsPostBody {
 #>
    [CmdletBinding()]
    param (
+      [Parameter(Mandatory = $True)]$BlogConfig,
       [Parameter(Mandatory = $True)]$Songs,
       [Parameter(Mandatory = $True)][string]$BodyPath,
       [Parameter(Mandatory = $True)][string]$ImageFolderPath
@@ -265,12 +277,9 @@ function Copy-BsComputerImageToBlog {
 #>
    [CmdletBinding()]
    param (
-      $BlogName = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
-         Where-Object Parameter -eq 'BlogName').value, 
-      $BlogConfigUri = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
-         Where-Object Parameter -eq 'BlogConfigUri').value, 
-      $BlogToken = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
-         Where-Object Parameter -eq 'BlogToken').value,
+      $BlogName = $(Get-BsParameter -parameter 'BlogName'), 
+      $BlogConfigUri = $(Get-BsParameter -parameter 'BlogConfigUri'), 
+      $BlogToken = $(Get-BsParameter -parameter 'BlogToken'),
       [Parameter(Mandatory = $True)][string]$imagePath
    )
    
@@ -283,10 +292,10 @@ function Copy-BsComputerImageToBlog {
    $headers = @{
       "Authorization" = "Bearer $BlogToken"
    }
-   $response = Invoke-RestMethod -Uri $BlogConfigUri -Headers $headers
-   [string]$mediaEndpoint = $response."media-endpoint"
+   $BlogConfig = Invoke-RestMethod -Uri $BlogConfigUri -Headers $headers
+   [string]$mediaEndpoint = $BlogConfig."media-endpoint"
 
-   $Destination = $response | 
+   $Destination = $BlogConfig | 
       Select-Object -ExpandProperty destination |
       Where-Object name -EQ $BlogName
 
@@ -294,6 +303,9 @@ function Copy-BsComputerImageToBlog {
    $MpDestination = [System.Web.HttpUtility]::UrlEncode($MpDestination)
 
    $Uri ="${mediaEndpoint}?mp-destination=$MpDestination" 
+
+   write-dbg "`$BlogName: <$BlogName>"
+   write-dbg "`$Uri: <$Uri>"
 
    $form = @{
       file = Get-Item $imagePath
@@ -304,6 +316,35 @@ function Copy-BsComputerImageToBlog {
 
    return $imageUrl
    
+   
+}
+
+function Get-BsBlogConfig {
+<#
+.SYNOPSIS
+   xx
+#>
+   [CmdletBinding()]
+   param (
+      [Parameter(Mandatory=$True)][string] $BlogConfigUri,
+   [Parameter(Mandatory=$True)][string]$BlogToken
+   )
+   
+   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+   write-startfunction
+   
+   write-dbg "`$BlogToken count: <$($BlogToken.Length)>"
+   
+   $headers = @{
+      "Authorization" = "Bearer $BlogToken"
+   }
+   $BlogConfig = Invoke-RestMethod -Uri $BlogConfigUri -Headers $headers
+   
+   write-dbg "`$BlogConfig count: <$($BlogConfig.Length)>"
+   write-endfunction
+   
+   return $BlogConfig
    
 }
 
@@ -417,7 +458,7 @@ function Get-BsParameter {
    [CmdletBinding()]
    param (
       $ParameterFile = "$PSParametersFolder/GeneralParameters.csv",
-      [Parameter(Mandatory = $True)][string]$Name
+      [Parameter(Mandatory = $True)][string]$Parameter
 
    )
    
@@ -426,7 +467,7 @@ function Get-BsParameter {
    write-startfunction
    
    $Value = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
-      Where-Object Parameter -eq $Name).value
+      Where-Object Parameter -eq $Parameter)
    
    write-endfunction
 
