@@ -11,7 +11,7 @@ function New-BsBlogPostFromSpotifyPlaylist {
       [string]$BlogConfigUri = $(Get-BsParameter -parameter BsBlogConfigUri),
       [string]$SpotifyWork = $(Get-BsParameter -parameter BsSpotifyWork),
       [string]$BodyPath = $(Get-BsParameter -parameter BsBodyPath),
-      [string]$ImagesFolderPath = $(Get-BsParameter -parameter BsImagesPath),
+      [string]$ImageFolderPath = $(Get-BsParameter -parameter BsImageFolderPath),
 
       $Since = $(get-date).adddays(-14)
    )
@@ -24,13 +24,19 @@ function New-BsBlogPostFromSpotifyPlaylist {
    $Songs = Get-BsSpotifyPlaylistSongs -Since $Since -PlaylistName $PlaylistName
    
    $BlogConfig = Get-BsBlogConfig -BlogConfigUri $BlogConfigUri -BlogToken $BlogToken
-   [string]$PostBody = Get-BSPostBody -Songs $Songs -BlogConfig $BlogConfig -BodyPath $BodyPath -ImagesFolderPath $ImagesPath
+
+   $Params = @{
+      Songs           = $Songs
+      BlogConfig      = $BlogConfig
+      BodyPath        = $BlogPath
+      ImageFolderPath = $ImageFolderPath
+   }
+   [string]$PostBody = Get-BSPostBody @Params
    
    
    Write-Output $PostBody
    
    write-endfunction
-   
    
 }
 
@@ -186,7 +192,7 @@ function Get-BsPostBody {
       }
       $SpotifyImage = get-BsSpotifyImage @Params
 
-      $BlogImage = Copy-BsComputerImageToBlog -imagePath $SpotifyImage
+      $BlogImage = Copy-BsComputerImageToBlog -imagePath $SpotifyImage -BlogConfig $BlogConfig
 
 
       <#
@@ -277,9 +283,10 @@ function Copy-BsComputerImageToBlog {
 #>
    [CmdletBinding()]
    param (
-      $BlogName = $(Get-BsParameter -parameter 'BlogName'), 
-      $BlogConfigUri = $(Get-BsParameter -parameter 'BlogConfigUri'), 
-      $BlogToken = $(Get-BsParameter -parameter 'BlogToken'),
+      [Parameter(Mandatory = $True)]$BlogConfig,
+      [Parameter(Mandatory = $True)][string]$BlogName,
+
+      [Parameter(Mandatory = $True)]$RestMethodHeaders,
       [Parameter(Mandatory = $True)][string]$imagePath
    )
    
@@ -289,20 +296,16 @@ function Copy-BsComputerImageToBlog {
    
    write-dbg "`$BlogToken count: <$($BlogToken.Length)>"
    
-   $headers = @{
-      "Authorization" = "Bearer $BlogToken"
-   }
-   $BlogConfig = Invoke-RestMethod -Uri $BlogConfigUri -Headers $headers
    [string]$mediaEndpoint = $BlogConfig."media-endpoint"
 
    $Destination = $BlogConfig | 
-      Select-Object -ExpandProperty destination |
-      Where-Object name -EQ $BlogName
+   Select-Object -ExpandProperty destination |
+   Where-Object name -EQ $BlogName
 
    [string]$MpDestination = $Destination.Uid
    $MpDestination = [System.Web.HttpUtility]::UrlEncode($MpDestination)
 
-   $Uri ="${mediaEndpoint}?mp-destination=$MpDestination" 
+   $Uri = "${mediaEndpoint}?mp-destination=$MpDestination" 
 
    write-dbg "`$BlogName: <$BlogName>"
    write-dbg "`$Uri: <$Uri>"
@@ -310,7 +313,7 @@ function Copy-BsComputerImageToBlog {
    $form = @{
       file = Get-Item $imagePath
    }
-   $uploadResponse = Invoke-RestMethod -Uri $Uri -Method Post -Headers $headers -Form $form
+   $uploadResponse = Invoke-RestMethod -Uri $Uri -Method Post -Headers $RestMethodHeaders -Form $form
    $imageUrl = $uploadResponse.Url
    write-endfunction
 
@@ -320,14 +323,14 @@ function Copy-BsComputerImageToBlog {
 }
 
 function Get-BsBlogConfig {
-<#
+   <#
 .SYNOPSIS
    xx
 #>
    [CmdletBinding()]
    param (
-      [Parameter(Mandatory=$True)][string] $BlogConfigUri,
-   [Parameter(Mandatory=$True)][string]$BlogToken
+      [Parameter(Mandatory = $True)][string] $BlogConfigUri,
+      [Parameter(Mandatory = $True)][string]$BlogToken
    )
    
    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
@@ -335,6 +338,7 @@ function Get-BsBlogConfig {
    write-startfunction
    
    write-dbg "`$BlogToken count: <$($BlogToken.Length)>"
+   write-dbg "`$BlogConfigUri: <$BlogConfigUri>"
    
    $headers = @{
       "Authorization" = "Bearer $BlogToken"
@@ -387,37 +391,22 @@ function Copy-BsSpotifyImageToBlog {
    
    
 }
-function write-startfunction {
+function write-dbg {
    <#
    .SYNOPSIS
       xx
    #>
    [CmdletBinding()]
    param (
-      
+      $DebugText 
    )
       
    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
-      
-      
+   write-debug $DebugText
       
 }
    
-function write-endfunction {
-   <#
-   .SYNOPSIS
-      xx
-   #>
-   [CmdletBinding()]
-   param (
-      
-   )
-      
-   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
-      
-      
-      
-}
+
 function write-startfunction {
    <#
    .SYNOPSIS
@@ -466,8 +455,10 @@ function Get-BsParameter {
    
    write-startfunction
    
-   $Value = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
+   $ParameterRow = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
       Where-Object Parameter -eq $Parameter)
+
+   $Value = $ParameterRow.Value
    
    write-endfunction
 

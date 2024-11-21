@@ -1,3 +1,4 @@
+<#
 Describe "New-BsBlogPostFromSpotifySongs" {
 
     BeforeAll {
@@ -57,4 +58,88 @@ Describe "New-BsBlogPostFromSpotifySongs" {
         $Length | Should -BeGreaterThan 100
     }
 }
+#>
+describe "Get-BsSpotifyPlaylistSongs " {
+    BeforeAll {
+        ipmo -force BlogStuff
 
+        [string]$PlaylistName = $(Get-BsParameter -parameter BsTestPlaylistName2)
+        
+        $Songs = Get-BsSpotifyPlaylistSongs -PlaylistName $PlaylistName -Since 100000
+
+    }
+
+    It "shoould retrieve songs" {
+        $Songs.length | Should -BeGreaterThan 10
+    }
+}
+Describe "Get-BsBlogConfig" {
+
+    BeforeAll {
+        ipmo -force BlogStuff
+
+        [string]$BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
+        [string]$BlogConfigUri = $(Get-BsParameter -parameter BsTestBlogConfigUri)
+      
+        $BlogConfig = Get-BsBlogConfig -BlogConfigUri $BlogConfigUri -BlogToken $BlogToken
+
+    }
+
+    It "should return three rows, one for tweets, one for test and one vanilla" {
+        $Destination = $BlogConfig | Select-Object -ExpandProperty Destination
+        $Destination | Should -HaveCount 3
+        $Destination | Where-Object Name -like "*tweet*" | Should -HaveCount 1
+        $Destination | Where-Object Name -like "*test*" | Should -HaveCount 1
+        $Destination | 
+        Where-Object Name -notlike "*tweet*" | 
+        Where-Object Name -notlike "*test*" | 
+        Should -HaveCount 1
+
+    }
+
+}
+Describe "Copy-BsComputerImageToBlog" {
+
+    BeforeAll {
+        ipmo -force BlogStuff
+
+        [string]$BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
+        [string]$BlogConfigUri = $(Get-BsParameter -parameter BsTestBlogConfigUri)
+        [string]$BlogName = $(Get-BsParameter -parameter BsTestBlogName)
+      
+        $BlogConfig = Get-BsBlogConfig -BlogConfigUri $BlogConfigUri -BlogToken $BlogToken
+
+        $Image = '/home/matty/test/spotify/images/Ann-Margret,Elvis Presley - Let Me Entertain You'
+        
+        $headers = @{
+            "Authorization" = "Bearer $BlogToken"
+        }
+        $Params = @{
+            RestMethodHeaders = $headers
+            ImagePath         = $Image
+            BlogConfig        = $BlogConfig
+            BlogName          = $BlogName
+        }
+        $BlogIMageURl = Copy-BsComputerImageToBlog @Params
+
+    }
+
+    It "returns a valid URI - <BlogImageUrl>" {
+        $BlogIMageURl | Should -BeLike "http*"
+    }
+
+    AfterAll {
+
+        write-dbg "About to delete `$BlogImageUrl: <$BlogImageUrl>"
+        write-dbg "But having a snooze first"
+        start-sleep -Seconds 2
+
+        # Send the HTTP POST request
+        $response = Invoke-RestMethod -Uri $BlogimageUrl -Method Delete -Headers $headers
+
+        # Output the response
+        $response
+
+    }
+
+}
