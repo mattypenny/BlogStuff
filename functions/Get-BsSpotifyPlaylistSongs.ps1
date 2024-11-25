@@ -191,7 +191,7 @@ function Get-BsPostBody {
          Album           = $Album 
          Artist          = $Artist
       }
-      $SpotifyImage = get-BsSpotifyImage @Params
+      $SpotifyImage = Copy-BsSpotifyImageToComputer @Params
 
       $BlogImage = Copy-BsComputerImageToBlog -imagePath $SpotifyImage -BlogConfig $BlogConfig
 
@@ -227,7 +227,7 @@ $PostBody
    
 }
 
-function get-BsSpotifyImage {
+function Copy-BsSpotifyImageToComputer {
    <#
 .SYNOPSIS
    xx
@@ -353,45 +353,6 @@ function Get-BsBlogConfig {
    
 }
 
-function Copy-BsSpotifyImageToComputer {
-   <#
-.SYNOPSIS
-   xx
-#>
-   [CmdletBinding()]
-   param (
-   
-   )
-   
-   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
-   
-   write-startfunction
-   
-   
-   write-endfunction
-   
-   
-}
-
-function Copy-BsSpotifyImageToBlog {
-   <#
-.SYNOPSIS
-   Returns location of image on blog website
-#>
-   [CmdletBinding()]
-   param (
-   
-   )
-   
-   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
-   
-   write-startfunction
-   
-   
-   write-endfunction
-   
-   
-}
 function write-dbg {
    <#
    .SYNOPSIS
