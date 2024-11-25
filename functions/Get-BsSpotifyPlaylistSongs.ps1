@@ -1,3 +1,4 @@
+import-module -force SpotiShell
 function New-BsBlogPostFromSpotifyPlaylist {
    <#
 .SYNOPSIS

@@ -59,6 +59,25 @@ Describe "New-BsBlogPostFromSpotifySongs" {
     }
 }
 #>
+
+describe "Get-BsSpotifyPlaylistId" {
+
+    BeforeAll {
+    ipmo -force BlogStuff
+
+        [string]$PlaylistName = $(Get-BsParameter -parameter BsTestPlaylistName2)
+        
+        $PlaylistId = Get-BsSpotifyPlaylistId -PlaylistName $PlaylistName
+
+    }
+
+    It "must return a playlist id <PlayListId> for playlist <PlayListName>" {
+
+        $PlaylistId.length | Should -BeGreaterThan 10 
+    }
+
+
+}
 describe "Get-BsSpotifyPlaylistSongs " {
     BeforeAll {
         ipmo -force BlogStuff
@@ -130,12 +149,12 @@ Describe "Copy-BsComputerImageToBlog" {
 
     AfterAll {
 
-        write-dbg "About to delete `$BlogImageUrl: <$BlogImageUrl>"
-        write-dbg "But having a snooze first"
-        start-sleep -Seconds 2
+        # write-dbg "About to delete `$BlogImageUrl: <$BlogImageUrl>"
+        # write-dbg "But having a snooze first"
+        #start-sleep -Seconds 2
 
         # Send the HTTP POST request
-        $response = Invoke-RestMethod -Uri $BlogimageUrl -Method Delete -Headers $headers
+        # $response = Invoke-RestMethod -Uri $BlogimageUrl -Method Delete -Headers $headers
 
         # Output the response
         $response
