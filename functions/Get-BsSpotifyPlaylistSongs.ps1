@@ -67,7 +67,7 @@ function Get-BsSpotifyPlaylistSongs {
    write-dbg "`$PlayListItems count: <$($PlayListItems.Length)>"
    foreach ($I in $PlayListItems) {
       $Addedat = $I.added_at
-      write-dbg "`$AddedAt: <$AddedAt>"
+
       $Tracks = $I | Select-Object -ExpandProperty Track
       foreach ($T in $Tracks) {
          $TrackName = $T.Name
@@ -162,8 +162,10 @@ function Get-BsPostBody {
    [CmdletBinding()]
    param (
       [Parameter(Mandatory = $True)]$BlogConfig,
+      [Parameter(Mandatory = $True)]$RestMethodHeaders,
+      [Parameter(Mandatory = $True)]$BlogName,
       [Parameter(Mandatory = $True)]$Songs,
-      [Parameter(Mandatory = $True)][string]$BodyPath,
+      [Parameter(Mandatory = $True)][string]$BodyFile,
       [Parameter(Mandatory = $True)][string]$ImageFolderPath
 
    )
@@ -193,7 +195,13 @@ function Get-BsPostBody {
       }
       $SpotifyImage = Copy-BsSpotifyImageToComputer @Params
 
-      $BlogImage = Copy-BsComputerImageToBlog -imagePath $SpotifyImage -BlogConfig $BlogConfig
+      $Params = @{
+         BlogName = $BlogName
+         BlogConfig = $BlogConfig
+         RestMethodHeaders = $RestMethodHeaders
+      }
+
+      $BlogImage = Copy-BsComputerImageToBlog -imagePath $SpotifyImage @Params
 
 
       <#
@@ -218,7 +226,7 @@ $PostBody
 
    }
    
-   Output-BsPostBodyToFile -BodyPath $BodyPath -PostBody $PostBody 
+   Write-BsPostBodyToFile -BodyFile $BodyFile -PostBody $PostBody 
    
    write-endfunction
 
@@ -263,14 +271,14 @@ function Write-BsPostBodyToFile {
    [CmdletBinding()]
    param (
       [Parameter(Mandatory = $True)][string]$PostBody,
-      [Parameter(Mandatory = $True)][string]$BodyPath  
+      [Parameter(Mandatory = $True)][string]$BodyFile  
    )
    
    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
    write-startfunction
    
-   Set-Content -path $BodyPath -Value $PostBody
+   Set-Content -path $BodyFile -Value $PostBody
    
    write-endfunction
    
