@@ -1,4 +1,18 @@
 
+Describe "Copy-BsPostBodyToBlog" {
+
+    It "posts to the blog" {
+        $False |  Should -Be $True
+    }
+
+    It "posts to the blog as a draft" {
+        $False |  Should -Be $True
+    }
+
+    AfterAll {
+        write-host -foreground Red "needs to delete the post"
+    }
+}
 Describe "Get-BsPostBody" {
 
     BeforeAll {
