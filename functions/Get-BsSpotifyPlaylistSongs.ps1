@@ -41,6 +41,81 @@ function New-BsBlogPostFromSpotifyPlaylist {
    
 }
 
+function Copy-BsPostBodyToBlog {
+<#
+.SYNOPSIS
+   xx
+#>
+   [CmdletBinding()]
+   param (
+   
+   )
+   
+   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+   write-startfunction
+   
+   CommandLine : $BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
+
+CommandLine : $BlogToken
+
+CommandLine : $BlogConfigUri = $(Get-BsParameter -parameter 
+              BsTestBlogConfigUri)
+
+CommandLine : $headers = @{
+                    "Authorization" = "Bearer $BlogToken"
+                 }
+
+CommandLine :    $BlogConfig = Invoke-RestMethod -Uri $BlogConfigUri -Headers 
+              $headers
+
+CommandLine :    $BlogConfig
+
+CommandLine : BlogConfig | 
+                 Select-Object -ExpandProperty destination 
+
+CommandLine : $BlogConfig | 
+                 Select-Object -ExpandProperty destination 
+
+CommandLine : $Destination = $BlogConfig | 
+                 Select-Object -ExpandProperty destination |
+                 Where-Object name -EQ 'mattypenny-test.micro.blog'
+
+CommandLine : $Destination
+
+CommandLine :  [string]$MpDestination = $Destination.Uid
+
+CommandLine :    $MpDestination = 
+              [System.Web.HttpUtility]::UrlEncode($MpDestination)
+
+CommandLine : $BlogConfig
+
+CommandLine : $Uri ="https://micro.blog?mp-destination=$MpDestination"
+
+CommandLine : $body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode($p
+              ostContent))"
+
+CommandLine : $body = 
+              "h=entry&content=$([System.Web.HttpUtility]::UrlEncode('hello'))"
+
+CommandLine : $response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
+              $headers -Body $body
+
+CommandLine : $uri
+
+CommandLine : $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
+
+CommandLine : $response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
+              $headers -Body $body
+
+
+   
+   
+   write-endfunction
+   
+   
+}
+
 function Get-BsSpotifyPlaylistSongs {
    <#
 .SYNOPSIS
