@@ -41,20 +41,27 @@ function New-BsBlogPostFromSpotifyPlaylist {
    
 }
 
-function Copy-BsPostBodyToBlog {
-<#
+function Write-BsPostBodyToBlog {
+   <#
 .SYNOPSIS
    xx
 #>
    [CmdletBinding()]
    param (
-   
+      [Parameter(Mandatory = $True)] $BlogConfig,
+      [Parameter(Mandatory = $True)] $RestMethodHeaders,
+      [Parameter(Mandatory = $True)][string] $BlogName,
+      [Parameter(Mandatory = $True)][string] $PostTitle,
+      [Parameter(Mandatory = $True)][string]  $PostBody,
+      $Draft = $True
+      # CrossPostToBlueSky = $False
    )
    
    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
    write-startfunction
    
+   <#
    CommandLine : $BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
 
 CommandLine : $BlogToken
@@ -107,7 +114,7 @@ CommandLine : $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
 
 CommandLine : $response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
               $headers -Body $body
-
+#>
 
    
    
@@ -271,8 +278,8 @@ function Get-BsPostBody {
       $SpotifyImage = Copy-BsSpotifyImageToComputer @Params
 
       $Params = @{
-         BlogName = $BlogName
-         BlogConfig = $BlogConfig
+         BlogName          = $BlogName
+         BlogConfig        = $BlogConfig
          RestMethodHeaders = $RestMethodHeaders
       }
 
@@ -509,4 +516,101 @@ function Get-BsParameter {
 
    return $Value
    
+}
+
+function Get-BsPosts {
+   <#
+.SYNOPSIS
+   xx
+#>
+   [CmdletBinding()]
+   param (
+
+      [string]$BlogName = $(Get-BsParameter -parameter BsBlogName),
+      [string][ValidateSet('main', 'test', 'tweets')]$BlogShortName = 'main',
+      [switch]$Full = $False
+   )
+   
+   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+   write-startfunction
+
+   $URi = switch ($BlogShortName) {
+      'main' {  
+         $(Get-BsParameter -parameter BsBlogName)
+      }
+      'test' {  
+         $(Get-BsParameter -parameter BsTestBlogName)
+      }
+      'tweets' {  
+         $(Get-BsParameter -parameter BsTweetsBlogName)
+      }
+      Default { $BlogName }
+   }
+   
+   write-dbg "`$Uri: <$Uri>"
+   $Uri = $Uri + '/feed.json'
+   write-dbg "`$Uri: <$Uri>"
+
+   $R = Invoke-RestMethod -Uri $uri -Method Get   
+   write-dbg "`$R count: <$($R.Length)>"
+
+   if ($Full) {
+      $R   | Select -expandproperty items  
+   }
+   else {
+      foreach ($I in $( $R   | Select -expandproperty items)) {
+         if ($I.Title) {
+            $FirstWords = $I.Title + ' ' + $I.Content_Html
+         }
+         else {
+
+            $FirstWords = $I.Content_Html
+         }
+         $FirstWords = Get-BsCleanText -DirtyText $FirstWords
+      
+         [PSCustomObject]@{
+            DatePublished = $I.date_published
+            FirstWords    = $FirstWords
+         }
+      }  
+
+   }
+
+   write-endfunction
+   
+   
+}
+
+function Get-BsCleanText {
+   <#
+.SYNOPSIS
+   xx
+#>
+   [CmdletBinding()]
+   param (
+      [Parameter(Mandatory = $True)][string] $DirtyText
+   )
+   
+   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+   write-startfunction
+
+   # Use a regex to replace HTML tags with nothing
+   $CleanText = $DirtyText -replace '<[^>]*>', ''
+
+   # Replace common HTML entities with their corresponding characters
+   $CleanText = $CleanText -replace '&rsquo;', "'"
+   $CleanText = $CleanText -replace '&lsquo;', "'"
+   $CleanText = $CleanText -replace '&rdquo;', '"'
+   $CleanText = $CleanText -replace '&ldquo;', '"'
+   $CleanText = $CleanText -replace '&ndash;', '-'
+   $CleanText = $CleanText -replace '&mdash;', '-'
+   $CleanText = $CleanText -replace '&amp;', '&'
+   $CleanText = $CleanText -replace '&lt;', '<'
+   $CleanText = $CleanText -replace '&gt;', '>'
+   $CleanText = $CleanText -replace '&nbsp;', ' '
+   # Add more replacements as needed
+
+   return $CleanText
 }
