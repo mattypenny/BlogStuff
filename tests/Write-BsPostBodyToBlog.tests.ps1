@@ -38,7 +38,7 @@ Describe "Write-BsPostBodyToBlog" {
 
         $Response = Write-BsPostBodyToBlog @SplatParams
 
-
+        $Response
         
 
     }

@@ -60,66 +60,53 @@ function Write-BsPostBodyToBlog {
    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
    write-startfunction
-   
    <#
-   CommandLine : $BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
+    $Destination = $BlogConfig | 
+   Select-Object -ExpandProperty destination |
+   Where-Object name -EQ $BlogName
 
-CommandLine : $BlogToken
+   [string]$MpDestination = $Destination.Uid
+   $MpDestination = [System.Web.HttpUtility]::UrlEncode($MpDestination)
 
-CommandLine : $BlogConfigUri = $(Get-BsParameter -parameter 
-              BsTestBlogConfigUri)
+   $Uri = "${mediaEndpoint}?mp-destination=$MpDestination" 
 
-CommandLine : $headers = @{
-                    "Authorization" = "Bearer $BlogToken"
-                 }
+   write-dbg "`$BlogName: <$BlogName>"
+   write-dbg "`$Uri: <$Uri>"
+   #>
 
-CommandLine :    $BlogConfig = Invoke-RestMethod -Uri $BlogConfigUri -Headers 
-              $headers
+   
 
-CommandLine :    $BlogConfig
-
-CommandLine : BlogConfig | 
-                 Select-Object -ExpandProperty destination 
-
-CommandLine : $BlogConfig | 
-                 Select-Object -ExpandProperty destination 
-
-CommandLine : $Destination = $BlogConfig | 
+$Destination = $BlogConfig | 
                  Select-Object -ExpandProperty destination |
-                 Where-Object name -EQ 'mattypenny-test.micro.blog'
+                 Where-Object name -EQ $BlogName
 
-CommandLine : $Destination
+$Destination
+write-dbg "`$Destination: <$Destination>"
 
-CommandLine :  [string]$MpDestination = $Destination.Uid
+ [string]$MpDestination = $Destination.Uid
+ write-dbg "`$MpDestination: <$MpDestination>"
 
-CommandLine :    $MpDestination = 
+   $MpDestination = 
               [System.Web.HttpUtility]::UrlEncode($MpDestination)
 
-CommandLine : $BlogConfig
 
-CommandLine : $Uri ="https://micro.blog?mp-destination=$MpDestination"
+$Uri ="https://micro.blog?mp-destination=$MpDestination"
 
-CommandLine : $body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode($p
-              ostContent))"
 
-CommandLine : $body = 
-              "h=entry&content=$([System.Web.HttpUtility]::UrlEncode('hello'))"
+$body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode('a hardcoded hello'))"
 
-CommandLine : $response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
+
+
+# $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
+
+$response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
               $headers -Body $body
-
-CommandLine : $uri
-
-CommandLine : $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
-
-CommandLine : $response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
-              $headers -Body $body
-#>
 
    
    
    write-endfunction
    
+   $response
    
 }
 
