@@ -76,32 +76,41 @@ function Write-BsPostBodyToBlog {
 
    
 
-$Destination = $BlogConfig | 
-                 Select-Object -ExpandProperty destination |
-                 Where-Object name -EQ $BlogName
+   $Destination = $BlogConfig | 
+   Select-Object -ExpandProperty destination |
+   Where-Object name -EQ $BlogName
 
-$Destination
-write-dbg "`$Destination: <$Destination>"
+   $Destination
+   write-dbg "`$Destination: <$Destination>"
 
- [string]$MpDestination = $Destination.Uid
- write-dbg "`$MpDestination: <$MpDestination>"
+   [string]$MpDestination = $Destination.Uid
+   write-dbg "`$MpDestination: <$MpDestination>"
 
    $MpDestination = 
-              [System.Web.HttpUtility]::UrlEncode($MpDestination)
+   [System.Web.HttpUtility]::UrlEncode($MpDestination)
 
 
-$Uri ="https://micro.blog?mp-destination=$MpDestination"
+   $Uri = "https://micro.blog/micropub?mp-destination=$MpDestination"
 
 
-$body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode('a hardcoded hello'))"
+   $body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode('a hardcoded hello'))"
 
 
 
-# $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
+   # $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
 
-$response = Invoke-RestMethod -Uri $uri -Method Post -Headers 
-              $headers -Body $body
+   # invoke-RestMethod -Uri https://micro.blog/micropub?mp-destination=mattypenny-test.micro.blog -Method Post -Headers $restmethodheaders -Body $body | select *
 
+
+   $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $restmethodheaders -Body $body
+
+$url    = $response.url    
+$preview = $response.preview
+$edit   = $response.edit   
+
+write-dbg "`$url: <$url>"
+write-dbg "`$preview: <$preview>"
+write-dbg "`$edit: <$edit>"
    
    
    write-endfunction

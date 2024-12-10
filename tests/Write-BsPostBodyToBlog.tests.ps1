@@ -6,11 +6,7 @@ Describe "Write-BsPostBodyToBlog" {
 
         [string]$BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
         [string]$BlogName = $(Get-BsParameter -parameter BsTestBlogName)
-        [string]$PlaylistName = $(Get-BsParameter -parameter BsTestPlaylistName)
         [string]$BlogConfigUri = $(Get-BsParameter -parameter BsTestBlogConfigUri)
-        [string]$SpotifyWork = $(Get-BsParameter -parameter BsTestSpotifyWork)
-        [string]$BodyPath = $(Get-BsParameter -parameter BsTestBodyPath)
-        [string]$ImageFolderPath = $(Get-BsParameter -parameter BsTestImageFolderPath)
 
         [string]$PostTitle = "Test test $(get-date)"
         [string]$PostBody = "Postbody test"
