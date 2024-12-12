@@ -80,7 +80,6 @@ function Write-BsPostBodyToBlog {
    Select-Object -ExpandProperty destination |
    Where-Object name -EQ $BlogName
 
-   $Destination
    write-dbg "`$Destination: <$Destination>"
 
    [string]$MpDestination = $Destination.Uid
@@ -93,7 +92,7 @@ function Write-BsPostBodyToBlog {
    $Uri = "https://micro.blog/micropub?mp-destination=$MpDestination"
 
 
-   $body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode('a hardcoded hello'))"
+   $body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode($PostBody))"
 
 
 
