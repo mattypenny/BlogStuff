@@ -1,0 +1,64 @@
+function Remove-BsPost {
+<#
+.SYNOPSIS
+  xx
+#>
+  [CmdletBinding()]
+  param (
+    
+        [string]$BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
+       [string][ValidateSet('test', 'tweets')]$BlogShortName = 'test',
+    [Parameter(Mandatory=$True)][int] $PostId    ,
+
+  )
+  
+  $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+  
+  write-startfunction
+  
+    if ($BlogShortName -eq 'test') {
+        $BlogName = $(Get-BsParameter -parameter BsTestBlogName)
+    } elseif ($BlogShortName -eq 'tweets') {
+        $BlogName = $(Get-BsParameter -parameter BsTweetsBlogName)
+
+    } else {
+        throw "Invalid BlogShortName"
+    }
+    
+    # throw an error if the BlogName does not contain either '-test.micro.blog' or '-tweets.micro.blog'
+    if ($BlogName -notmatch '-test.micro.blog|-tweets.micro.blog') {
+        throw "Invalid BlogName"
+    }
+
+
+        [string]$BlogConfigUri = $(Get-BsParameter -parameter BsTestBlogConfigUri)
+
+  
+        $SplatParams = @{
+            BlogConfigUri = $BlogConfigUri
+            BlogToken     = $BlogToken
+        }
+        
+        $BlogConfig = Get-BsBlogConfig @SplatParams
+        
+        $RestMethodHeaders = @{
+            "Authorization" = "Bearer $BlogToken"
+        }
+
+  
+
+# Define the API endpoint and headers
+???need to do the destination thing...did that come from the config?
+$uri = "https://micro.blog/micropub?url=https://micro.blog/yourusername/$postID"
+$headers = @{
+    "Authorization" = "Bearer YOUR_APP_TOKEN"
+}
+
+# Send the DELETE request
+Invoke-RestMethod -Uri $uri -Headers $headers -Method Delete
+
+  
+  write-endfunction
+  
+  
+}
