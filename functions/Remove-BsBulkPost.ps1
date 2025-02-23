@@ -9,7 +9,8 @@ function Remove-BsBulkPost {
         [string]$BlogToken = $(Get-BsParameter -parameter BsTestBlogToken),
        [string][ValidateSet('test', 'tweets')]$BlogShortName = 'test',
        
-       [int]$NumberOfPosts = 20
+       [int]$NumberOfPosts = 20,
+       [switch]$NoConfirm = $false
   )
   
   $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
@@ -63,16 +64,38 @@ function Remove-BsBulkPost {
         }
   
  # building somthing that looks like this:
- # https://micro.blog/micropub?mp-destination=https://mattypenny-tweets.micro.blog`&url=https://mattypenny-tweets.micro.blog/2022/12/31/1609327355398443008.html`&action=delete -Method post -Header $RestMethodHeaders
-$Uri = "https://micro.blog/micropub?mp-destination=$MpDestination"
+ # https://micro.blog/micropub?mp-destination=https://mattypenny-tweets.micro.blog`&q=source`&offset=0`&limit=30
+ $Uri = "https://micro.blog/micropub?mp-destination=$MpDestination" + 
+    "&q=source" + "&offset=0" + "&limit=$NumberOfPosts"
 
-???got here
 write-dbg "`$Uri: <$Uri>"
 
 
 # Send the DELETE request
-Invoke-RestMethod -Uri $uri -Headers $RestMethodHeaders -Method Get
+$Posts = Invoke-RestMethod -Uri $uri -Headers $RestMethodHeaders -Method Get |
+    select-object -ExpandProperty items | 
+    select-object -ExpandProperty Properties 
+    
 
+foreach ($Post in $Posts) {
+    $Published = $Post | Select-Object -ExpandProperty published | Select-Object -first 1
+    $Content = $Post | Select-Object -ExpandProperty content | Select-Object -first 1
+    $Url = $Post | Select-Object -ExpandProperty url | Select-Object -first 1
+
+    $Content = $Content.Substring(0, [math]::Min(140, $Content.Length))
+
+    if ($NoConfirm) {
+        Remove-BSPost -BlogShortName $BlogShortName -PostUri $Url
+        write-host "Deleted post: $Published - $Url - $Content"
+        start-sleep -Seconds 2
+    } else {
+        write-host "Delete post?: $Published - $Url - $Content"
+        read-Host -Prompt "Press Enter to delete or Ctl-C to cancel"
+
+        Remove-BSPost -BlogShortName $BlogShortName -PostUri $Url
+    }
+
+}
   
   write-endfunction
   
