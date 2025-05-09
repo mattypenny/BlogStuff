@@ -5,8 +5,8 @@ function Get-BsParameter {
  #>
     [CmdletBinding()]
     param (
-       $ParameterFile = "$PSParametersFolder/GeneralParameters.csv",
-       [Parameter(Mandatory = $True)][string]$Parameter
+        $ParameterFile = "$Env:PSParametersFolder/GeneralParameters.csv",
+        [Parameter(Mandatory = $True)][string]$Parameter
  
     )
     
@@ -14,8 +14,8 @@ function Get-BsParameter {
     
     write-startfunction
     
-    $ParameterRow = $(import-csv $PSParametersFolder/GeneralParameters.csv | 
-       Where-Object Parameter -eq $Parameter)
+    $ParameterRow = $(import-csv $ParameterFile | 
+        Where-Object Parameter -eq $Parameter)
  
     $Value = $ParameterRow.Value
     
@@ -23,5 +23,5 @@ function Get-BsParameter {
  
     return $Value
     
- }
+}
  
