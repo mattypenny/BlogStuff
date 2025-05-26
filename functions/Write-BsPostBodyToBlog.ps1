@@ -48,9 +48,12 @@ function Write-BsPostBodyToBlog {
  
  
    $Uri = "https://micro.blog/micropub?mp-destination=$MpDestination"
+
+   $datetimeFormat = 'ddd MMM dd HH:mm:ss K yyyy'
+   $datetimeObject = [DateTime]::ParseExact($PostDate, $datetimeFormat, $null)
+
  
-   $LocalPostDate = Get-Date $PostDate -Format "yyyy-MM-ddTHH:mm:ss"
-   $PostDate = $LocalPostDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+   $PostDate = $datetimeObject.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
    write-dbg "`$PostDate: <$PostDate>"
 
  

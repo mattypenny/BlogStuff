@@ -56,7 +56,6 @@ function Write-BsFromCsvToBlog {
 
         [string]$TweetDate = $Tweet.datetime
         write-dbg "`$TweetDate: <$TweetDate>"
-        $TweetDate = $TweetDate.Substring(0, 16)
         $PostParams = @{
             PostTitle = $null
             PostDate  = $TweetDate
