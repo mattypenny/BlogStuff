@@ -8,7 +8,8 @@ function Write-BsPostBodyToBlog {
       [Parameter(Mandatory = $True)] $BlogConfig,
       [Parameter(Mandatory = $True)] $RestMethodHeaders,
       [Parameter(Mandatory = $True)][string] $BlogName,
-      [Parameter(Mandatory = $True)][string] $PostTitle,
+      [Parameter(Mandatory = $False)][string] $PostTitle,
+      [Parameter(Mandatory = $False)]         $PostDate,
       [Parameter(Mandatory = $True)][string]  $PostBody,
       $Draft = $True
       # CrossPostToBlueSky = $False
@@ -48,15 +49,20 @@ function Write-BsPostBodyToBlog {
  
    $Uri = "https://micro.blog/micropub?mp-destination=$MpDestination"
  
+   $LocalPostDate = Get-Date $PostDate -Format "yyyy-MM-ddTHH:mm:ss"
+   $PostDate = $LocalPostDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+   write-dbg "`$PostDate: <$PostDate>"
+
  
    $body = "h=entry&content=$([System.Web.HttpUtility]::UrlEncode($PostBody))"
  
- 
+   $body += "&published=$([System.Web.HttpUtility]::UrlEncode($PostDate))"
  
    # $Uri ="https://micro.blog/micropub?mp-destination=$MpDestination"
  
    # invoke-RestMethod -Uri https://micro.blog/micropub?mp-destination=mattypenny-test.micro.blog -Method Post -Headers $restmethodheaders -Body $body | select *
  
+   write-dbg "`$body: <$body>"
  
    $response = Invoke-RestMethod -Uri $uri -Method Post -Headers $restmethodheaders -Body $body
  

@@ -54,11 +54,13 @@ function Write-BsFromCsvToBlog {
 
     foreach ($Tweet in $Tweets) {
 
+        [string]$TweetDate = $Tweet.datetime
+        write-dbg "`$TweetDate: <$TweetDate>"
+        $TweetDate = $TweetDate.Substring(0, 16)
         $PostParams = @{
-            PostTitle = $Tweet.title
-            PostBody  = $Tweet.body
-            PostDate  = $Tweet.date
-            PostUrl   = $Tweet.url
+            PostTitle = $null
+            PostDate  = $TweetDate
+            PostBody  = $Tweet.Text
             Draft     = $Draft
         }
         Write-BsPostBodyToBlog @ConfigParams @PostParams
