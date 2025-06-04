@@ -5,14 +5,15 @@ function New-BsPostTextFromCrucialTracks {
 #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $True)][string]$CrucialTracksUri
+        [Parameter(Mandatory = $True)][string]$CrucialTracksUri,
+        [string]$Format = 'Short'
     )
    
     $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
     write-startfunction
 
-    $CrucialTracksPosts = Get-BsCrucialTracksPosts -CrucialTracksUri $CrucialTracksUri
+    $CrucialTracksPosts = Get-BsCrucialTracksPosts -CrucialTracksUri $CrucialTracksUri -Format $Format
 
     $CrucialTracksPosts
    
@@ -47,7 +48,8 @@ Line10 : <p>It's a mixture of the streaming service, Shazam-ing stuff, music mag
 #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $True)][string]$CrucialTracksUri
+        [Parameter(Mandatory = $True)][string]$CrucialTracksUri,
+        [string]$Format
     )
    
     $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
@@ -83,8 +85,13 @@ These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.o
         $Song = $Lines[5] -replace "<description><!\[CDATA\[<p><em>", "" -replace "</em></p>", ""
         write-dbg "`$Lines[5]: $($Lines[5]) `$Song: <$Song>"
 
-        $Link = $Lines[6].split('"')[1]
-        write-dbg "`$Lines[6]: $($Lines[6]) `$Song: <$Link>"
+        if ($Format -eq 'Short') {
+            $Link = get-BSShortLinkAndImage -link $Lines[6].split('"')[1]
+        }
+        else {
+            $Link = $Lines[6].split('"')[1]
+            write-dbg "`$Lines[6]: $($Lines[6]) `$Song: <$Link>"
+        }
 
         $Comment = ""
         for ($i = 9; $i -lt $lines.Count; $i++) {
