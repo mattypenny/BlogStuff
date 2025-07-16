@@ -19,7 +19,6 @@ function Write-BsFromCsvToBlog {
     write-startfunction
 
     [string]$BlogToken = $(Get-BsParameter -parameter BsTestBlogToken)
-    [string]$BlogName = $(Get-BsParameter -parameter BsTestBlogName)
     [string]$BlogConfigUri = $(Get-BsParameter -parameter BsTestBlogConfigUri)
 
     $SplatParams = @{
