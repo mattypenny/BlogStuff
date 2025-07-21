@@ -89,9 +89,17 @@ These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.o
 
         if ($Format -eq 'Short') {
             $Link = $Lines[6].split('"')[1]
-            $LocalImage = get-BSAppleImage -link $Lines[6].split('"')[1] -DownloadFolder $DownloadFolder
-            $ImageNAme = [System.IO.Path]::GetFileName($LocalImage)
-            $MbImage = Invoke-CopyBsComputerImageToBlog -PhotoFolder $DownloadFolder -PhotoName $ImageName -BlogName $BlogName
+            $Params = @{
+                Link           = $Link
+                DownloadFolder = $DownloadFolder
+                Filename       = $Song
+                PhotoFolder    = $DownloadFolder
+                PhotoName      = $ImageName
+                BlogName       = $BlogName
+                Format         = $Format
+
+            }
+            Copy-BsAppleImageToBlog @Params
             $LinkText = get-BSAppleHtml -Link $Link -Image $Image -Format $Format
         }
         else {
@@ -165,6 +173,49 @@ $Comment
    
 }
 
+function Copy-BsAppleImageToBlog {
+    <#
+.SYNOPSIS
+   xx
+.EXAMPLE
+ipmo -force BlogStuff; Copy-BsAppleImageToBlog -TrackURL https://music.apple.com/us/album/goin-back/1440892547?i=1440893575 -DownloadFolder C:\temp\Blogstuff\AppleImages\ -Song 'Goin Back - Dusty Springfield' -ImageName x -BlogName mattypenny-test.micro.blog -Format jpg
+#>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $True)][string] $TrackUrl,
+        [Parameter(Mandatory = $True)][string] $DownloadFolder,
+        [Parameter(Mandatory = $True)][string] $Song,
+        [Parameter(Mandatory = $True)][string] $ImageName,
+        [Parameter(Mandatory = $True)][string] $BlogName,
+        [Parameter(Mandatory = $True)][string] $Format
+    )
+   
+    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+    write-startfunction
+    $Params = @{
+        TrackUrl       = $TrackUrl
+        DownloadFolder = $DownloadFolder
+        Filename       = $Song
+    }
+   
+    $LocalImage = get-BSAppleImage @Params
+    $ImageNAme = [System.IO.Path]::GetFileName($LocalImage)
+    write-dbg "`$LocalImage: <$LocalImage> `$ImageName: <$ImageName>"
+    
+
+    $Params = @{
+        PhotoFolder = $DownloadFolder
+        PhotoName   = $ImageName
+        BlogName    = $BlogName
+    }
+
+    $MbImage = Invoke-CopyBsComputerImageToBlog @Params
+   
+    return $MbImage
+   
+}
+
 function get-BSAppleImage {
     <#
 .SYNOPSIS
@@ -173,7 +224,7 @@ function get-BSAppleImage {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $True)][string]$TrackUrl,
-        $Folder = 'C:\temp\BlogStuff\AppleImages',
+        $DownloadFolder = 'C:\temp\BlogStuff\AppleImages',
         [Parameter(Mandatory = $True)][string]$FileName
     )
    
@@ -181,16 +232,15 @@ function get-BSAppleImage {
    
     write-startfunction
 
-    write-dbg "`$Folder: <$Folder>"
+    write-dbg "`$DownloadFolder: <$DownloadFolder>"
 
-    if (Test-Path -Path $Folder) {
-        write-dbg "`$Folder exists"
+    if (Test-Path -Path $DownloadFolder) {
+        write-dbg "`$DownloadFolder exists"
     }
     else {
-        mkdir $Folder | Out-Null
+        mkdir $DownloadFolder | Out-Null
     }
 
-    $OutFile = Join-Path -Path $Folder -ChildPath $FileName
 
     # Assuming $TrackUrl is in this format: https://music.apple.com/us/album/take-me-home-country-roads/1440919985?i=1440920253
     write-dbg "`$TrackUrl: <$TrackUrl>"
@@ -209,11 +259,18 @@ function get-BSAppleImage {
     $response = Invoke-RestMethod -Uri $url
 
     $albumArtUrl = $response.results[0].artworkUrl100
+    write-dbg "`$albumArtUrl: <$albumArtUrl>"
+
+    $FileType = $albumArtUrl.split('.')[-1]
+    write-dbg "`$FileType: <$FileType>"
+
+    $OutFile = Join-Path -Path $DownloadFolder -ChildPath "$FileName.$FileType"
 
     invoke-webrequest -Uri $albumArtUrl -OutFile $OutFile -UseBasicParsing
    
     write-endfunction
    
+    return $OutFile
    
 }
 
