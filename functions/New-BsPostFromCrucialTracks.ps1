@@ -15,13 +15,16 @@ function New-BsPostTextFromCrucialTracks {
 
     $CrucialTracksPosts = Get-BsCrucialTracksPosts -CrucialTracksUri $CrucialTracksUri -Format $Format
 
-    $CrucialTracksPosts
+    $MarkdownText = Get-BSMarkdownTextForCrucialTracksPosts -CrucialTracksPosts $CrucialTracksPosts -Format $Format
+
+    $MarkdownText
    
     write-endfunction
    
    
 }
-function Get-BsCrucialTracksPosts {
+
+function Get-BsCrucialTracksPostsAsObjects {
     <#
 .SYNOPSIS
    xx
@@ -48,10 +51,7 @@ Line10 : <p>It's a mixture of the streaming service, Shazam-ing stuff, music mag
 #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory = $True)][string]$CrucialTracksUri,
-        [Parameter(Mandatory = $True)][string]$DownloadFolder = "C:\temp\BlogStuff\CrucialTracks",
-        [Parameter(Mandatory = $True)][string]$BlogName = "mattypenny-test.micro.blog",
-        [string]$Format
+        [Parameter(Mandatory = $True)][string]$CrucialTracksUri
     )
    
     $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
@@ -61,14 +61,11 @@ Line10 : <p>It's a mixture of the streaming service, Shazam-ing stuff, music mag
     $Response = Invoke-WebRequest -Uri $CrucialTracksUri -UseBasicParsing
     $Content = $Response.Content
 
-    $MarkdownText = @"
-These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.org/profile/mattypenny) for the last few days.
-"@
 
     # split the content into the separate items
     [string[]]$Items = $Content -split "<item>"
     
-    $Posts = foreach ($Item in $Items) {
+    $PostsAsObjects = foreach ($Item in $Items) {
         
         # skip the first item, which is the header info
         if ($Item -eq $Items[0]) {
@@ -87,34 +84,8 @@ These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.o
         $Song = $Lines[5] -replace "<description><!\[CDATA\[<p><em>", "" -replace "</em></p>", ""
         write-dbg "`$Lines[5]: $($Lines[5]) `$Song: <$Song>"
 
-        if ($Format -eq 'Short') {
-            $Link = $Lines[6].split('"')[1]
-            $Params = @{
-                Link           = $Link
-                DownloadFolder = $DownloadFolder
-                Filename       = $Song
-                PhotoFolder    = $DownloadFolder
-                PhotoName      = $ImageName
-                BlogName       = $BlogName
-                Format         = $Format
-
-            }
-            Copy-BsAppleImageToBlog @Params
-            $LinkText = get-BSAppleHtml -Link $Link -Image $Image -Format $Format
-        }
-        else {
-            $Link = $Lines[6].split('"')[1]
-            write-dbg "`$Lines[6]: $($Lines[6]) `$Song: <$Link>"
-
-            $LinkText = @"
-{{< apple-music url="$Link" >}}
-
-
-<a href="$Link" target="_blank">$Song on Apple Music</a>
-"@
-        }
-
-        $AppleHtml = get-BsAppleHtml -Link $Link -Image $Image -Format $Format
+        $Link = $Lines[6].split('"')[1]
+        write-dbg "`$Lines[6]: $($Lines[6]) `$Link: <$Link>"
 
         $Comment = ""
         for ($i = 9; $i -lt $lines.Count; $i++) {
@@ -132,10 +103,104 @@ $CommentLine
 "@
             }
         }
-        write-dbg "`$Lines[9]: $($Lines[9]) `$Song: <$Comment>"
+        write-dbg "`$Lines[9]: $($Lines[9]) `$Comment: <$Comment>"
+
+        $PostObject = [PSCustomObject]@{
+            DateString = $DateString
+            Prompt     = $Prompt
+            Song       = $Song
+            Link       = $Link
+            Comment    = $Comment
+
+        }
+        $PostObject
+
+    }
+
+    write-endfunction
+
+    return $PostsAsObjects
+   
+}
 
 
-        $MarkdownText = @"
+
+function Get-BSMarkdownTextForCrucialTracksPosts {
+    <#
+.SYNOPSIS
+   xx
+.EXAMPLE
+    . C:\Users\matty\OneDrive\powershell\Modules\BlogStuff\functions\New-BsPostFromCrucialTracks.ps1 ; New-BsPostTextFromCrucialTracks -CrucialTracksUri $feedurl
+    Line1  :
+Line2  : <title>Crucial Track for 12 May 2025</title>
+Line3  : <link>https://app.crucialtracks.org/profile/mattypenny/20250512</link>
+Line4  : <guid>https://app.crucialtracks.org/entries/338</guid>
+Line5  : <pubDate>Mon, 12 May 2025 07:15:51 +0000</pubDate>
+Line6  : <description><![CDATA[<p><em>"Henrietta Street" by The BeerMats</em></p>
+Line7  : <p><a
+         href="https://music.apple.com/us/album/henrietta-street/1570934588?i=1570934590"
+         target="_blank">Listen on Apple Music</a></p>
+Line8  : <p><audio controls><source src="https://audio-ssl.itunes.apple.com/itunes-assets/Au
+         dioPreview115/v4/27/6c/56/276c56ec-86cd-b45e-0e09-34b36eb3fcd3/mzaf_177715791455151
+         25768.plus.aac.p.m4a" type="audio/mp4">Your browser does not support the audio
+         element.</audio></p>
+Line9  : <p><em>How do you discover new music, and what’s the latest gem you’ve
+         found?</em></p>
+Line10 : <p>It's a mixture of the streaming service, Shazam-ing stuff, music magazines
+         (through Libby)...and very occasionally seeing bands. This is from a band who I
+         saw last month, who were fab</p>
+#>
+    [CmdletBinding()]
+    param (
+        [string]$Format
+    )
+   
+    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+    write-startfunction
+   
+
+    $MarkdownText = @"
+These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.org/profile/mattypenny) for the last few days.
+"@
+
+            
+    $LinkText = get-BSAppleHtml -Link $Link -Image $Image -Format $Format
+}
+else {
+    $Link = $Lines[6].split('"')[1]
+    write-dbg "`$Lines[6]: $($Lines[6]) `$Song: <$Link>"
+
+    $LinkText = @"
+{{< apple-music url="$Link" >}}
+
+
+<a href="$Link" target="_blank">$Song on Apple Music</a>
+"@
+}
+
+$AppleHtml = get-BsAppleHtml -Link $Link -Image $Image -Format $Format
+
+$Comment = ""
+for ($i = 9; $i -lt $lines.Count; $i++) {
+    if ($Lines[$i] -like "*View*Crucial Tracks profile*") {
+        break
+    }
+
+    $CommentLine = $Lines[$i] -replace "<p>", "" -replace "</p>"
+
+    if ($CommentLine) {
+        $Comment = @"
+$Comment
+$CommentLine
+
+"@
+    }
+}
+write-dbg "`$Lines[9]: $($Lines[9]) `$Song: <$Comment>"
+
+
+$MarkdownText = @"
 $MarkdownText
 ### $DateString - _${Prompt}_
 
@@ -149,7 +214,7 @@ $Comment
 
 "@
 
-        <#
+<#
         [PSCustomObject]@{
             DateString = $DateString
             Prompt     = $Prompt
@@ -161,15 +226,64 @@ $Comment
         #>
 
         
-    }
+}
 
    
 
+write-endfunction
+   
+# $Posts
+$MarkdownText = $MarkdownText -replace "’", "'"
+$MarkdownText
+   
+}
+
+
+
+function Copy-BsAllImagesToBlogAndAddUriToPosts {
+    <#
+.SYNOPSIS
+   xx
+#>
+    [CmdletBinding()]
+    param (
+        [Parameter(Mandatory = $True)][string]$DownloadFolder = "C:\temp\BlogStuff\CrucialTracks",
+        [Parameter(Mandatory = $True)][string]$BlogName = "mattypenny-test.micro.blog",
+        [Parameter(Mandatory = $True)]$Posts
+   
+    )
+   
+    $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
+   
+    write-startfunction
+   
+    <# Check all this#>
+    foreach ($P in $Posts) {
+        write-dbg "Processing post: $($P.DateString)"
+        write-dbg "Song: $($P.Song)"
+        write-dbg "Link: $($P.Link)"
+       
+        $ImageName = $P.Song -replace '[^a-zA-Z0-9]', '-'
+        $ImageName = "$ImageName.jpg"
+       
+        write-dbg "`$ImageName: <$ImageName>"
+       
+        $Params = @{
+            TrackUrl       = $P.Link
+            DownloadFolder = $DownloadFolder
+            Song           = $P.Song
+            ImageName      = $ImageName
+            BlogName       = $BlogName
+        }
+       
+        $MbImage = Copy-BsAppleImageToBlog @Params
+       
+        # Add the image URI to the post object
+        $P.ImageUri = $MbImage.Uri
+    }
+   
     write-endfunction
    
-    # $Posts
-    $MarkdownText = $MarkdownText -replace "’", "'"
-    $MarkdownText
    
 }
 
@@ -186,8 +300,7 @@ ipmo -force BlogStuff; Copy-BsAppleImageToBlog -TrackURL https://music.apple.com
         [Parameter(Mandatory = $True)][string] $DownloadFolder,
         [Parameter(Mandatory = $True)][string] $Song,
         [Parameter(Mandatory = $True)][string] $ImageName,
-        [Parameter(Mandatory = $True)][string] $BlogName,
-        [Parameter(Mandatory = $True)][string] $Format
+        [Parameter(Mandatory = $True)][string] $BlogName
     )
    
     $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
