@@ -166,8 +166,7 @@ These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.o
 
             
     $LinkText = get-BSAppleHtml -Link $Link -Image $Image -Format $Format
-}
-else {
+
     $Link = $Lines[6].split('"')[1]
     write-dbg "`$Lines[6]: $($Lines[6]) `$Song: <$Link>"
 
@@ -177,30 +176,29 @@ else {
 
 <a href="$Link" target="_blank">$Song on Apple Music</a>
 "@
-}
 
-$AppleHtml = get-BsAppleHtml -Link $Link -Image $Image -Format $Format
+    $AppleHtml = get-BsAppleHtml -Link $Link -Image $Image -Format $Format
 
-$Comment = ""
-for ($i = 9; $i -lt $lines.Count; $i++) {
-    if ($Lines[$i] -like "*View*Crucial Tracks profile*") {
-        break
-    }
+    $Comment = ""
+    for ($i = 9; $i -lt $lines.Count; $i++) {
+        if ($Lines[$i] -like "*View*Crucial Tracks profile*") {
+            break
+        }
 
-    $CommentLine = $Lines[$i] -replace "<p>", "" -replace "</p>"
+        $CommentLine = $Lines[$i] -replace "<p>", "" -replace "</p>"
 
-    if ($CommentLine) {
-        $Comment = @"
+        if ($CommentLine) {
+            $Comment = @"
 $Comment
 $CommentLine
 
 "@
+        }
     }
-}
-write-dbg "`$Lines[9]: $($Lines[9]) `$Song: <$Comment>"
+    write-dbg "`$Lines[9]: $($Lines[9]) `$Song: <$Comment>"
 
 
-$MarkdownText = @"
+    $MarkdownText = @"
 $MarkdownText
 ### $DateString - _${Prompt}_
 
@@ -214,7 +212,7 @@ $Comment
 
 "@
 
-<#
+    <#
         [PSCustomObject]@{
             DateString = $DateString
             Prompt     = $Prompt
@@ -226,15 +224,14 @@ $Comment
         #>
 
         
-}
 
    
 
-write-endfunction
+    write-endfunction
    
-# $Posts
-$MarkdownText = $MarkdownText -replace "’", "'"
-$MarkdownText
+    # $Posts
+    $MarkdownText = $MarkdownText -replace "’", "'"
+    $MarkdownText
    
 }
 
@@ -257,14 +254,15 @@ function Copy-BsAllImagesToBlogAndAddUriToPosts {
    
     write-startfunction
    
+    $Posts = $Posts | select -First 1
     <# Check all this#>
     foreach ($P in $Posts) {
         write-dbg "Processing post: $($P.DateString)"
         write-dbg "Song: $($P.Song)"
         write-dbg "Link: $($P.Link)"
        
-        $ImageName = $P.Song -replace '[^a-zA-Z0-9]', '-'
-        $ImageName = "$ImageName.jpg"
+        $ImageName = "$($P.Song).jpg"
+        $ImageName = $ImageName -replace '"', ''
        
         write-dbg "`$ImageName: <$ImageName>"
        
@@ -279,11 +277,13 @@ function Copy-BsAllImagesToBlogAndAddUriToPosts {
         $MbImage = Copy-BsAppleImageToBlog @Params
        
         # Add the image URI to the post object
-        $P.ImageUri = $MbImage.Uri
+        # $P.ImageUri = $MbImage.Uri
+        $P | Add-Member -MemberType NoteProperty -Name ImageUri -Value $MbImage.Uri -Force
     }
    
     write-endfunction
    
+    $Posts
    
 }
 
