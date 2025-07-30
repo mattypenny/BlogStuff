@@ -6,6 +6,7 @@ function New-BsPostTextFromCrucialTracks {
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $True)][string]$CrucialTracksUri,
+        [Parameter(Mandatory = $False)][int]$MostRecent = 1,
         [string]$Format = 'Short'
     )
    
@@ -13,11 +14,26 @@ function New-BsPostTextFromCrucialTracks {
    
     write-startfunction
 
-    $CrucialTracksPosts = Get-BsCrucialTracksPosts -CrucialTracksUri $CrucialTracksUri -Format $Format
+    $CrucialTracksPosts = Get-BsCrucialTracksPostsAsObjects -CrucialTracksUri $CrucialTracksUri 
+    write-dbg "`$CrucialTracksPosts count: <$($CrucialTracksPosts.Length)>"
 
-    $MarkdownText = Get-BSMarkdownTextForCrucialTracksPosts -CrucialTracksPosts $CrucialTracksPosts -Format $Format
+    $CrucialTracksPosts = $CrucialTracksPosts | select -First $MostRecent
+    write-dbg "`$CrucialTracksPosts count: <$($CrucialTracksPosts.Length)>"
 
-    $MarkdownText
+    $Params = @{
+        DownloadFolder = "C:\temp\BlogStuff\AppleImages\" 
+        BlogName       = "mattypenny-test.micro.blog" 
+        Posts          = $CrucialTracksPosts    
+    }
+    
+
+
+    $CrucialTracksPostsWithImageUrls = Copy-BsAllImagesToBlogAndAddUriToPosts @Params
+    $CrucialTracksPostsWithImageUrls
+
+    # $MarkdownText = Get-BSMarkdownTextForCrucialTracksPosts -CrucialTracksPosts $CrucialTracksPosts -Format $Format
+
+    # $MarkdownText
    
     write-endfunction
    
@@ -254,7 +270,7 @@ function Copy-BsAllImagesToBlogAndAddUriToPosts {
    
     write-startfunction
    
-    $Posts = $Posts | select -First 1
+    # $Posts = $Posts | select -First 1 # for testing
     <# Check all this#>
     foreach ($P in $Posts) {
         write-dbg "Processing post: $($P.DateString)"
@@ -278,7 +294,7 @@ function Copy-BsAllImagesToBlogAndAddUriToPosts {
        
         # Add the image URI to the post object
         # $P.ImageUri = $MbImage.Uri
-        $P | Add-Member -MemberType NoteProperty -Name ImageUri -Value $MbImage.Uri -Force
+        $P | Add-Member -MemberType NoteProperty -Name ImageUri -Value $MbImage -Force
     }
    
     write-endfunction
@@ -306,6 +322,9 @@ ipmo -force BlogStuff; Copy-BsAppleImageToBlog -TrackURL https://music.apple.com
     $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
     write-startfunction
+
+    $Song = $Song -replace '"', ''
+
     $Params = @{
         TrackUrl       = $TrackUrl
         DownloadFolder = $DownloadFolder

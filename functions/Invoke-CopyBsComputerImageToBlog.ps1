@@ -35,6 +35,7 @@ function Invoke-CopyBsComputerImageToBlog {
         }
         $BlogIMageURl = Copy-BsComputerImageToBlog @Params
         write-dbg "`$BlogIMageURl: <$BlogIMageURl>"
+        $BlogIMageURl  
     }
    
     write-endfunction
