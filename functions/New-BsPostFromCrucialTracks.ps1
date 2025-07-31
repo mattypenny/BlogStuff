@@ -29,11 +29,10 @@ function New-BsPostTextFromCrucialTracks {
 
 
     $CrucialTracksPostsWithImageUrls = Copy-BsAllImagesToBlogAndAddUriToPosts @Params
-    $CrucialTracksPostsWithImageUrls
 
-    # $MarkdownText = Get-BSMarkdownTextForCrucialTracksPosts -CrucialTracksPosts $CrucialTracksPosts -Format $Format
+    $MarkdownText = Get-BSMarkdownTextForCrucialTracksPosts -CrucialTracksPosts $CrucialTracksPosts -MostRecent $MostRecent
 
-    # $MarkdownText
+    $MarkdownText
    
     write-endfunction
    
@@ -146,101 +145,84 @@ function Get-BSMarkdownTextForCrucialTracksPosts {
 .SYNOPSIS
    xx
 .EXAMPLE
-    . C:\Users\matty\OneDrive\powershell\Modules\BlogStuff\functions\New-BsPostFromCrucialTracks.ps1 ; New-BsPostTextFromCrucialTracks -CrucialTracksUri $feedurl
-    Line1  :
-Line2  : <title>Crucial Track for 12 May 2025</title>
-Line3  : <link>https://app.crucialtracks.org/profile/mattypenny/20250512</link>
-Line4  : <guid>https://app.crucialtracks.org/entries/338</guid>
-Line5  : <pubDate>Mon, 12 May 2025 07:15:51 +0000</pubDate>
-Line6  : <description><![CDATA[<p><em>"Henrietta Street" by The BeerMats</em></p>
-Line7  : <p><a
-         href="https://music.apple.com/us/album/henrietta-street/1570934588?i=1570934590"
-         target="_blank">Listen on Apple Music</a></p>
-Line8  : <p><audio controls><source src="https://audio-ssl.itunes.apple.com/itunes-assets/Au
-         dioPreview115/v4/27/6c/56/276c56ec-86cd-b45e-0e09-34b36eb3fcd3/mzaf_177715791455151
-         25768.plus.aac.p.m4a" type="audio/mp4">Your browser does not support the audio
-         element.</audio></p>
-Line9  : <p><em>How do you discover new music, and what’s the latest gem you’ve
-         found?</em></p>
-Line10 : <p>It's a mixture of the streaming service, Shazam-ing stuff, music magazines
-         (through Libby)...and very occasionally seeing bands. This is from a band who I
-         saw last month, who were fab</p>
+.NOTES
+    The input will look like this:
+    DateString : 28 July 2025
+    Prompt     : What's your favorite song about letting go?
+    Song       : "Let Her Dance" by The Bobby Fuller Four
+    Link       : https://music.apple.com/us/album/let-her-dance/29123800?i=29123999
+    Comment    :
+                I'm not sure whether this is a song about letting go, or about not letting go.
+
+                It sometimes feels a bit stalker-y and sinister tbh....but it's a great track
+
+    ImageUri   : https://mattypenny-test.micro.blog/uploads/2025/ef26343b47.jpg
 #>
     [CmdletBinding()]
     param (
-        [string]$Format
+        [Parameter(Mandatory = $True)]$CrucialTracksPosts,
+        [Parameter(Mandatory = $True)] [int]$MostRecent
     )
    
     $DebugPreference = $PSCmdlet.GetVariableValue('DebugPreference')
    
     write-startfunction
    
+    if ($CrucialTracksPosts.Count -eq 1) {
 
-    $MarkdownText = @"
-These are the posts from my [Crucial Tracks profile](https://app.crucialtracks.org/profile/mattypenny) for the last few days.
-"@
+        foreach ($Post in $CrucialTracksPosts) {
+            $MarkdownText = @"
+### My Crucial Track for $($Post.DateString) - $($Post.Song)
 
-            
-    $LinkText = get-BSAppleHtml -Link $Link -Image $Image -Format $Format
+_$($Post.Prompt)_
 
-    $Link = $Lines[6].split('"')[1]
-    write-dbg "`$Lines[6]: $($Lines[6]) `$Song: <$Link>"
+$($Post.Song)
 
-    $LinkText = @"
-{{< apple-music url="$Link" >}}
+$($Post.Comment)
 
+{{< apple-music url="$($Post.Link)" >}}
 
-<a href="$Link" target="_blank">$Song on Apple Music</a>
-"@
+<a href="$($Post.Link)" target="_blank">$($Post.Song) on Apple Music</a>
 
-    $AppleHtml = get-BsAppleHtml -Link $Link -Image $Image -Format $Format
-
-    $Comment = ""
-    for ($i = 9; $i -lt $lines.Count; $i++) {
-        if ($Lines[$i] -like "*View*Crucial Tracks profile*") {
-            break
-        }
-
-        $CommentLine = $Lines[$i] -replace "<p>", "" -replace "</p>"
-
-        if ($CommentLine) {
-            $Comment = @"
-$Comment
-$CommentLine
-
+This is from [Crucial Tracks](https://app.crucialtracks.org/dashboard). My profile is [here](https://app.crucialtracks.org/profile/mattypenny).
 "@
         }
     }
-    write-dbg "`$Lines[9]: $($Lines[9]) `$Song: <$Comment>"
+    else {
 
-
-    $MarkdownText = @"
-$MarkdownText
-### $DateString - _${Prompt}_
-
-
-$Song
-
-
-$Comment
-
-
-
+        $MarkdownText = @"
+These are the [Crucial Tracks](https://app.crucialtracks.org/profile/mattypenny) for the last few days.
 "@
+            
+        foreach ($Post in $CrucialTracksPosts) {
+            <#
+                I'm aiming to get each entry to look like this:
 
-    <#
-        [PSCustomObject]@{
-            DateString = $DateString
-            Prompt     = $Prompt
-            Song       = $Song
-            Link       = $Link
-            Comment    = $Comment
-            Text       = $MarkdownText
-        }
-        #>
-
+                <div style="overflow: auto; margin-bottom: 20px;">
+                    <img src="https://mattypenny-test.micro.blog/uploads/2025/toots.jpg" width="100" height="100" alt="Toots and the Maytals album art" style="float: left; margin-right: 15px;">
+                    <div style="overflow: hidden;">
+                        <p style="margin-top: 0; margin-bottom: 0;"><strong><em>Share a song that feels like coming home after a long trip.</em></strong></p>
+                        <p style="margin-top: 5px;">Toots and the Maytals - Take Me Home Country Roads</p>
+                        <p style="margin-top: 5px;">There are a couple of dream songs I really like - Spancil Hill, Christy Moore's Delirium Tremens - but this is maybe my favourite. According to the streaming service it was the song I played most a couple of years back</p>
+                    </div>
+                </div>
+            #>
         
+            $MarkdownText = @"
+<div style="overflow: auto; margin-bottom: 20px;">
+  <img src="$($Post.ImageUri)" width="100" height="100" alt="Cover of the song - $($Post.Song)" style="float: left; margin-right: 15px;">
+  <div style="overflow: hidden;">
+    <p style="margin-top: 0; margin-bottom: 0;"><strong><em>$($Post.Prompt)</em></strong></p>
+    <p style="margin-top: 5px;">$($Post.Song)</p>
+    <p style="margin-top: 5px;">$($Post.Comment)</p>
+    <p style="margin-top: 5px;"><a href="$($Post.Link)">$($Post.Song) on Apple music</p>
+    </div>
+</div>
 
+$MarkdownText
+"@
+        }
+    }
    
 
     write-endfunction
